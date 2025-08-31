@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>My Items | Campus Lost & Found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="theme-color" content="#667eea"/>
+    <style>
+        body {background:linear-gradient(144deg,#667eea 0%,#764ba2 80%);min-height:100vh;font-family:'Segoe UI','Roboto',sans-serif;color:#23234a;padding-bottom:100px;}
+        .container{background:rgba(255,255,255,0.91);margin:38px auto 0 auto;max-width:500px;border-radius:18px;box-shadow:0 8px 36px rgba(120,80,240,0.14);padding:30px 14px 20px 14px;}
+        h2{color:#5f51d8;font-weight:bold;text-align:center;margin-bottom:14px;}
+        .items-grid{display:grid;grid-template-columns:1fr;gap:20px;}
+        .item-card{background:rgba(237,238,252,0.93);border:1px solid #e6eafb;border-radius:14px;box-shadow:0 2px 12px rgba(102,126,234,0.09);padding:15px 14px;}
+        .item-title{font-weight:bold;color:#542894;font-size:1.13rem;}
+        .item-type{background:#efecfa;color:#764ba2;border-radius:7px;font-size:.88em;padding:2.5px 9px;margin-right:8px;}
+        .item-photo{max-width:100%;display:block;margin-bottom:8px;border-radius:8px;}
+        .no-items{text-align:center;color:#afa;padding:45px 0;font-size:1.12rem;}
+        .bottom-nav{position:fixed;bottom:19px;left:50%;transform:translateX(-50%);width:90vw;max-width:380px;height:64px;background:rgba(255,255,255,0.92);border-radius:22px;box-shadow:0 6px 24px rgba(120,80,240,0.18),0 1px 7px rgba(150,160,250,0.07);backdrop-filter:blur(16px);display:flex;justify-content:space-around;align-items:center;z-index:1002;border:1.3px solid #ebeaff;}
+        .bottom-nav button{flex:1 1 0;background:none;border:none;display:flex;flex-direction:column;align-items:center;color:#8173d9;font-size:15px;padding:4px 0 0 0;cursor:pointer;border-radius:15px;transition:background .15s,color .2s;font-weight:500;position:relative;}
+        .bottom-nav button.active,.bottom-nav button:focus,.bottom-nav button:active{background:linear-gradient(130deg,#ebeafd 60%,#f2eaff 100%);color:#5f51d8;}
+        .bottom-nav .nav-indicator{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:38px;height:4px;border-radius:5px 5px 0 0;background:linear-gradient(90deg,#667eea 10%,#764ba2 90%);opacity:.7;margin-top:5px;}
+        .nav-icon{font-size:1.6rem;margin-bottom:0;display:block;}
+        .nav-label{font-size:0.95em;margin-top:0;}
+        .logout-btn{position:fixed;top:16px;right:15px;background:linear-gradient(135deg,#ff7a7a,#d01919);color:#fff;border:none;border-radius:50px;font-weight:bold;padding:13px 20px;font-size:.97rem;letter-spacing:.2px;box-shadow:0 2px 10px rgba(255,30,30,0.09);cursor:pointer;z-index:1001;}
+        @media (max-width: 500px) {.container{border-radius:0;margin-top:8px;padding:8vw 3vw 17vw 3vw;}}
+    </style>
+</head>
+<body>
+<button class="logout-btn" id="logoutBtn">Logout</button>
+<div class="container">
+    <h2>👤 My Reported Items</h2>
+    <div id="myItemsContainer" class="items-grid"></div>
+    <div id="noItemsMsg" class="no-items" style="display:none;">You haven't reported any items yet!</div>
+</div>
+<nav class="bottom-nav">
+    <button onclick="navigate('report_item.html')">
+        <span class="nav-icon">&#128221;</span>
+        <span class="nav-label">Report</span>
+    </button>
+    <button onclick="navigate('browse_items.html')">
+        <span class="nav-icon">&#128269;</span>
+        <span class="nav-label">Browse</span>
+    </button>
+    <button onclick="navigate('my_items.html')" class="active">
+        <span class="nav-icon">&#128100;</span>
+        <span class="nav-label">My Items</span>
+        <div class="nav-indicator"></div>
+    </button>
+</nav>
+<script>
+    function navigate(url) { window.location.href = url;}
+    if (!localStorage.getItem('isAuthenticated')) {
+      alert("You're not logged in! Redirecting to login...");
+      window.location.href = "login.html";
+    }
+    document.getElementById('logoutBtn').onclick=function(){
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('loggedInUser');
+      alert("You have been logged out!");
+      window.location.href = "login.html";
+    };
+
+    function renderMyItems() {
+      const items = JSON.parse(localStorage.getItem('items') || "[]");
+      const currUser = JSON.parse(localStorage.getItem('loggedInUser') || "null");
+      const myItemsContainer = document.getElementById('myItemsContainer');
+      myItemsContainer.innerHTML = '';
+      let found = false;
+      if(currUser && currUser.email){
+        const myItems = items.filter(item => item.email === currUser.email);
+        if(myItems.length === 0){
+          document.getElementById('noItemsMsg').style.display='block';
+          return;
+        } else {
+          document.getElementById('noItemsMsg').style.display='none';
+        }
+        for(const item of myItems.reverse()){
+          found = true;
+          const card = document.createElement('div');
+          card.className = 'item-card';
+          let html='';
+          if(item.photoUrl){
+            html+=`<img class="item-photo" src="${item.photoUrl}" alt="Item photo">`;
+          }
+          html+=`<div class="item-title">${item.itemName}</div>
+          <div class="item-type">${item.itemType === 'lost' ? 'Lost' : 'Found'}</div>
+          <div><b>Description:</b> ${item.description}</div>
+          <div><b>Location:</b> ${item.location}</div>
+          <div><b>Drop-Off Location:</b> ${item.drop}</div>
+          <div><b>Date:</b> ${item.date}</div>`;
+          card.innerHTML=html;
+          myItemsContainer.appendChild(card);
+        }
+      }
+      if(!found) document.getElementById('noItemsMsg').style.display='block';
+    }
+    document.addEventListener('DOMContentLoaded', renderMyItems);
+</script>
+</body>
+</html>

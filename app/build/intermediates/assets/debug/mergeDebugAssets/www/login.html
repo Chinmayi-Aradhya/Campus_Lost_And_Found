@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Campus Lost & Found - Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #333;
+        }
+        .login-container {
+          background: #fff;
+          padding: 32px 26px;
+          border-radius: 18px;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14);
+          max-width: 340px;
+          width: 100%;
+        }
+        .login-container h2 {
+          text-align: center;
+          margin-bottom: 18px;
+          color: #667eea;
+        }
+        .login-container form {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        input[type="email"], input[type="password"], input[type="text"] {
+          padding: 11px;
+          border-radius: 8px;
+          border: 1.5px solid #e1e5e9;
+          font-size: 1rem;
+          margin-bottom: 5px;
+        }
+        button {
+          padding: 12px;
+          border: none;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-weight: 600;
+          font-size: 1rem;
+          cursor: pointer;
+        }
+        .toggle-link {
+          background: none;
+          color: #667eea;
+          border: none;
+          text-align: left;
+          margin: 0 0 0 4px;
+          padding: 0;
+          font-size: 0.97rem;
+          cursor: pointer;
+        }
+        .status-message {
+          margin-bottom: 12px;
+          font-size: 0.97rem;
+          min-height: 22px;
+          text-align: center;
+          font-weight: 500;
+        }
+        .status-message.error { color: #dc2626; }
+        .status-message.success { color: #2e7d32; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2 id="formTitle">Login</h2>
+    <div class="status-message" id="statusMessage"></div>
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="password" id="password" placeholder="Password" required />
+
+        <!-- UPDATED: Added Student ID field to signup -->
+        <div id="signupExtra" style="display: none;">
+            <input type="text" id="signupName" placeholder="Your Name" />
+            <input type="text" id="signupStudentId" placeholder="Student ID (USN/SAP)" />
+        </div>
+
+        <button id="mainBtn" type="submit">Login</button>
+    </form>
+    <div style="text-align: center; margin-top: 16px;">
+        <span id="toggleMsg">Don't have an account?</span>
+        <button class="toggle-link" id="toggleBtn">Sign up</button>
+    </div>
+</div>
+
+<script>
+    (function seedDemoUserIfNeeded() {
+      let users = [];
+      try { users = JSON.parse(localStorage.getItem('authUsers') || '[]'); } catch(e){}
+      if (!Array.isArray(users) || users.length === 0) {
+        localStorage.setItem('authUsers', JSON.stringify([
+          {email: 'test@example.com', password: 'password123', name: 'Demo User', studentId: 'DEMO123'}
+        ]));
+      }
+    })();
+
+    let isSignup = false;
+    const loginForm = document.getElementById('loginForm');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const signupExtra = document.getElementById('signupExtra');
+    const mainBtn = document.getElementById('mainBtn');
+    const formTitle = document.getElementById('formTitle');
+    const statusMessage = document.getElementById('statusMessage');
+
+    function showMessage(message, type = "error") {
+      statusMessage.textContent = message;
+      statusMessage.className = `status-message ${type}`;
+    }
+
+    function switchMode() {
+      isSignup = !isSignup;
+      formTitle.textContent = isSignup ? 'Sign Up' : 'Login';
+      mainBtn.textContent = isSignup ? 'Create Account' : 'Login';
+      toggleBtn.textContent = isSignup ? 'Login' : 'Sign up';
+      document.getElementById('toggleMsg').textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
+      signupExtra.style.display = isSignup ? 'block' : 'none';
+      document.getElementById('signupName').required = isSignup;
+      document.getElementById('signupStudentId').required = isSignup;
+      statusMessage.textContent = "";
+    }
+    toggleBtn.onclick = switchMode;
+
+    function getUsers() {
+      try { return JSON.parse(localStorage.getItem('authUsers') || '[]'); } catch(e) { return []; }
+    }
+    function saveUsers(users) {
+      localStorage.setItem('authUsers', JSON.stringify(users));
+    }
+
+    // UPDATED: Now saves studentId as well
+    function setCurrentUser(user) {
+      localStorage.setItem('loggedInUser', JSON.stringify({
+          email: user.email,
+          name: user.name,
+          studentId: user.studentId // Critical addition
+      }));
+    }
+
+    loginForm.onsubmit = function (e) {
+      e.preventDefault();
+      statusMessage.textContent = "";
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      let users = getUsers();
+
+      if (isSignup) {
+        const name = document.getElementById('signupName').value.trim();
+        const studentId = document.getElementById('signupStudentId').value.trim();
+        if (!name || !studentId) {
+          showMessage("Please fill all signup fields", "error");
+          return;
+        }
+        if (users.find(u => u.email === email)) {
+          showMessage("An account with this email already exists!", "error");
+          return;
+        }
+
+        const newUser = { email, password, name, studentId };
+        users.push(newUser);
+        saveUsers(users);
+        setCurrentUser(newUser);
+        localStorage.setItem('isAuthenticated', 'true');
+
+        showMessage("Signup successful! Redirecting...", "success");
+        setTimeout(() => { window.location.href = "index.html"; }, 1000);
+
+      } else { // Login logic
+        const user = users.find(u => u.email === email && u.password === password);
+        if (user) {
+          setCurrentUser(user); // Pass the entire user object
+          localStorage.setItem('isAuthenticated', 'true');
+          showMessage("Login successful! Redirecting...", "success");
+          setTimeout(() => { window.location.href = "index.html"; }, 1000);
+        } else {
+          showMessage("Invalid email or password.", "error");
+        }
+      }
+    };
+</script>
+</body>
+</html>

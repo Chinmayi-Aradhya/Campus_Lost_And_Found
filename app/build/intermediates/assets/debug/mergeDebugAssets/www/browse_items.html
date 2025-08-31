@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Browse Items | Campus Lost & Found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="theme-color" content="#667eea"/>
+    <style>
+        body {background:linear-gradient(144deg,#667eea 0%,#764ba2 80%);min-height:100vh;font-family:'Segoe UI','Roboto',sans-serif;color:#23234a;padding-bottom:100px;}
+        .container{background:rgba(255,255,255,0.90);margin:38px auto 0 auto;max-width: 500px;border-radius:18px;box-shadow:0 8px 36px rgba(120,80,240,0.14);padding:30px 12px 23px 12px;}
+        h2{color:#5f51d8;font-weight:bold;text-align:center;margin-bottom:14px;}
+        .search-input{width:100%;padding:13px 13px 13px 40px;border-radius:7px;border:1.5px solid #e1e5e9;margin-bottom:16px;font-size:1rem;background:#f8f8fa;background-image:url('data:image/svg+xml;utf8,<svg height="16" viewBox="0 0 20 20" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M12.9 14.32a8 8 0 1 1 1.414-1.413l4.387 4.387-1.415 1.414-4.385-4.388zM8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12z" fill="%23667eea"/></svg>');background-position:12px center;background-repeat:no-repeat;}
+        .items-grid{display:grid;grid-template-columns:1fr;gap:18px;}
+        .item-card{background:rgba(237,238,252,0.93);border:1px solid #e6eafb;border-radius:14px;box-shadow:0 2px 12px rgba(102,126,234,0.09);padding:15px 14px;}
+        .item-title{font-weight:bold;color:#542894;font-size:1.13rem;}
+        .item-type{background:#efecfa;color:#764ba2;border-radius:7px;font-size:.88em;padding:2.5px 10px;margin-right:7px;}
+        .item-photo{max-width:100%;display:block;margin-bottom:8px;border-radius:8px;}
+        .no-items{text-align:center;color:#aaa;padding:40px 0;font-size:1.13rem;}
+        .bottom-nav{position:fixed;bottom:19px;left:50%;transform:translateX(-50%);width:90vw;max-width:380px;height:64px;background:rgba(255,255,255,0.92);border-radius:22px;box-shadow:0 6px 24px rgba(120,80,240,0.18),0 1px 7px rgba(150,160,250,0.07);backdrop-filter:blur(16px);display:flex;justify-content:space-around;align-items:center;z-index:1002;border:1.3px solid #ebeaff;}
+        .bottom-nav button{flex:1 1 0;background:none;border:none;display:flex;flex-direction:column;align-items:center;color:#8173d9;font-size:15px;padding:4px 0 0 0;cursor:pointer;border-radius:15px;transition:background .15s,color .2s;font-weight:500;position:relative;}
+        .bottom-nav button.active,.bottom-nav button:focus,.bottom-nav button:active{background:linear-gradient(130deg,#ebeafd 60%,#f2eaff 100%);color:#5f51d8;}
+        .bottom-nav .nav-indicator{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:38px;height:4px;border-radius:5px 5px 0 0;background:linear-gradient(90deg,#667eea 10%,#764ba2 90%);opacity:.7;margin-top:5px;}
+        .nav-icon{font-size:1.6rem;margin-bottom:0;display:block;}
+        .nav-label{font-size:0.95em;margin-top:0;}
+        .logout-btn{position:fixed;top:16px;right:15px;background:linear-gradient(135deg,#ff7a7a,#d01919);color:#fff;border:none;border-radius:50px;font-weight:bold;padding:13px 20px;font-size:.97rem;letter-spacing:.2px;box-shadow:0 2px 10px rgba(255,30,30,0.09);cursor:pointer;z-index:1001;}
+        @media (max-width: 500px) {.container{border-radius:0;margin-top:8px;padding:8vw 3vw 17vw 3vw;}}
+    </style>
+</head>
+<body>
+<button class="logout-btn" id="logoutBtn">Logout</button>
+<div class="container">
+    <h2>🔍 Browse Reported Items</h2>
+    <input type="text" id="searchInput" class="search-input" placeholder="Search for items..."/>
+    <div id="itemsContainer" class="items-grid"></div>
+    <div id="noItemsMsg" class="no-items" style="display:none;">No items found!</div>
+</div>
+<nav class="bottom-nav">
+    <button onclick="navigate('report_item.html')">
+        <span class="nav-icon">&#128221;</span><span class="nav-label">Report</span>
+    </button>
+    <button onclick="navigate('browse_items.html')" class="active">
+        <span class="nav-icon">&#128269;</span><span class="nav-label">Browse</span>
+        <div class="nav-indicator"></div>
+    </button>
+    <button onclick="navigate('my_items.html')">
+        <span class="nav-icon">&#128100;</span><span class="nav-label">My Items</span>
+    </button>
+</nav>
+<script>
+    function navigate(url) { window.location.href = url;}
+    if (!localStorage.getItem('isAuthenticated')) {
+      alert("You're not logged in! Redirecting to login...");
+      window.location.href = "login.html";
+    }
+    document.getElementById('logoutBtn').onclick=function(){
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('loggedInUser');
+      alert("You have been logged out!");
+      window.location.href = "login.html";
+    };
+    function renderItems() {
+      const items = JSON.parse(localStorage.getItem('items') || "[]");
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filtered = items.filter(item =>
+        (item.itemName&&item.itemName.toLowerCase().includes(q)) ||
+        (item.description&&item.description.toLowerCase().includes(q)) ||
+        (item.location&&item.location.toLowerCase().includes(q)) ||
+        (item.drop&&item.drop.toLowerCase().includes(q))
+      );
+      const c = document.getElementById('itemsContainer');
+      c.innerHTML='';
+      if(filtered.length===0){
+        document.getElementById('noItemsMsg').style.display='block';return;
+      } else {document.getElementById('noItemsMsg').style.display='none';}
+      for(const item of filtered.reverse()){
+        const el = document.createElement('div');
+        el.className='item-card';
+        let html='';
+        if(item.photoUrl){
+          html+=`<img class="item-photo" src="${item.photoUrl}" alt="Item photo">`;
+        }
+        html+=`<div class="item-title">${item.itemName}</div>
+        <div class="item-type">${item.itemType === 'lost' ? 'Lost' : 'Found'}</div>
+        <div><b>Description:</b> ${item.description}</div>
+        <div><b>Location:</b> ${item.location}</div>
+        <div><b>Drop-Off Location:</b> ${item.drop}</div>
+        <div><b>Date:</b> ${item.date}</div>`;
+        el.innerHTML=html;
+        c.appendChild(el);
+      }
+    }
+    document.getElementById('searchInput').oninput=renderItems;
+    document.addEventListener('DOMContentLoaded',renderItems);
+</script>
+</body>
+</html>
