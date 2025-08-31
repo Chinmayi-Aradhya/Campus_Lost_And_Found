@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Lost & Found</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,...">
+    <meta name="theme-color" content="#398cf4">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; color: #333; padding-bottom: 80px;
+        }
+        body.modal-open, body.side-menu-open { overflow: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header {
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 20px;
+            padding: 20px; margin-bottom: 30px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 { color: white; font-size: 2.5rem; margin-bottom: 10px; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+        .subtitle { color: rgba(255, 255, 255, 0.9); font-size: 1.1rem; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-container { background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        input, textarea, select {
+            width: 100%; padding: 12px; border: 2px solid #e1e5e9;
+            border-radius: 10px; font-size: 1rem; transition: border-color 0.3s ease;
+        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .file-input-label {
+            display: flex; align-items: center; justify-content: center; padding: 40px;
+            border: 2px dashed #667eea; border-radius: 10px; background: #f8f9ff;
+            cursor: pointer; transition: all 0.3s ease; text-align: center; color: #667eea; font-weight: 500;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;
+            padding: 15px 30px; border-radius: 10px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            width: 100%; text-align: center; display: inline-block;
+        }
+        .preview-container { position: relative; margin-top: 15px; text-align: center; display: none; }
+        .preview-image { width: 100%; max-width: 200px; height: auto; border-radius: 10px; object-fit: cover; border: 2px solid #e1e5e9; }
+
+        /* Modal & Side Menu Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center;
+            z-index: 1003; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.9); transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-content h3 { margin-bottom: 15px; }
+        #contactModalActions { display: flex; gap: 10px; }
+
+        .hamburger-menu-btn {
+            position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3); color: white; width: 45px; height: 45px;
+            border-radius: 50%; z-index: 1001; backdrop-filter: blur(5px);
+            font-size: 1.5rem; line-height: 45px; text-align: center; cursor: pointer;
+        }
+        .side-menu-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1002;
+            opacity: 0; visibility: hidden; transition: opacity 0.4s ease;
+        }
+        .side-menu-overlay.visible { opacity: 1; visibility: visible; }
+        .side-menu {
+            position: fixed; top: 0; left: 0; width: 80%; max-width: 320px; height: 100%;
+            background: #f4f6f8; box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+            transform: translateX(-100%); transition: transform 0.4s ease;
+            display: flex; flex-direction: column; padding: 20px;
+        }
+        .side-menu.visible { transform: translateX(0); }
+        .profile-section { text-align: center; margin-bottom: 25px; }
+        .profile-pic { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 4px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        .profile-name { font-weight: bold; font-size: 1.2rem; }
+        .profile-email { color: #666; font-size: 0.9rem; }
+        .side-menu-form .form-group { margin-bottom: 15px; }
+        .side-menu-footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+
+        /* Other Styles */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 70px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); border-top: 1px solid rgba(0, 0, 0, 0.05); z-index: 999; }
+        .bottom-nav-btn { background: none; border: none; color: #888; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; height: 100%; transition: color 0.3s ease; }
+        .bottom-nav-btn .icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .bottom-nav-btn .label { font-size: 0.75rem; }
+        .bottom-nav-btn.active { color: #667eea; font-weight: 600; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .item-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .item-image { width: 100%; height: 200px; object-fit: cover; background: #f5f5f5; }
+        .item-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+        .item-title { font-size: 1.2rem; font-weight: 600; color: #333; }
+        .item-details { margin: 15px 0; }
+        .item-detail { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; }
+        .status-lost { background: #fee2e2; color: #dc2626; }
+        .status-found { background: #dcfce7; color: #16a34a; }
+        .search-container { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .search-input { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e1e5e9; }
+        .filter-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .filter-btn { flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 10px; background: white; color: #555; cursor: pointer; font-weight: 500; }
+        .filter-btn.active { border-color: #667eea; background: #f0f2ff; color: #667eea; }
+        .no-items { text-align: center; padding: 40px; color: white; font-size: 1.1rem; }
+    </style>
+</head>
+<body class="">
+
+<button class="hamburger-menu-btn" id="openSideMenuBtn">☰</button>
+
+<div class="side-menu-overlay" id="sideMenuOverlay">
+    <div class="side-menu" id="sideMenu">
+        <div class="profile-section">
+            <img src="data:image/svg+xml,..." alt="Profile" class="profile-pic" id="sideMenuProfilePic" onclick="document.getElementById('updateProfilePic').click()">
+            <h3 class="profile-name" id="sideMenuProfileName">User Name</h3>
+            <p class="profile-email" id="sideMenuProfileEmail">user@email.com</p>
+        </div>
+        <form class="side-menu-form" id="profileUpdateForm">
+            <div class="form-group"><label for="updateName">Update Name</label><input type="text" id="updateName" required></div>
+            <div class="form-group"><label for="updateEmail">Update Email</label><input type="email" id="updateEmail" required></div>
+            <input type="file" id="updateProfilePic" accept="image/*" style="display:none;">
+            <button type="submit" class="btn">💾 Save Changes</button>
+        </form>
+        <div class="side-menu-footer">
+            <button class="btn" id="logoutBtn" style="background: #ef4444;">🔒 Logout</button>
+            <button class="btn" id="closeSideMenuBtn" style="background: #6b7280;">Close</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <header>
+        <h1>🎓 Campus Lost & Found</h1>
+        <p class="subtitle">Help reunite lost items with their owners</p>
+    </header>
+
+    <div id="report" class="tab-content">
+        <div class="form-container">
+            <h2 style="margin-bottom: 20px; color: #333;">Report Item</h2>
+            <form id="itemForm">
+                <div class="form-group"><label for="itemType"><b>Item Type</b></label><select id="itemType" required><option value="">Select...</option><option value="lost">Lost</option><option value="found">Found</option></select></div>
+                <div class="form-group"><label for="itemName"><b>Item Name</b></label><input type="text" id="itemName" placeholder="e.g., iPhone 13 Pro" required></div>
+                <div class="form-group"><label for="description"><b>Description</b></label><textarea id="description" rows="3" placeholder="Royal blue case..." required></textarea></div>
+                <div class="form-group"><label for="location"><b>Location</b></label><input type="text" id="location" placeholder="e.g., Library 2nd floor" required></div>
+                <div class="form-group"><label for="date"><b>Date</b></label><input type="date" id="date" required></div>
+                <div class="form-group">
+                    <label><b>Photo (Optional)</b></label>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+                    <input type="file" id="galleryInput" accept="image/*" style="display: none;">
+                    <div id="addPhotoBox" class="file-input-label" onclick="openPhotoModal()">📷 Add Photo</div>
+                    <div id="previewContainer" class="preview-container">
+                        <img id="photoPreview" class="preview-image">
+                        <button type="button" onclick="removePhoto()" style="position: absolute; top: 5px; right: 5px; background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 1.2rem; cursor: pointer; line-height: 30px;">×</button>
+                    </div>
+                </div>
+                <div class="form-group"><label for="name"><b>Your Name</b></label><input type="text" id="name" required></div>
+                <div class="form-group"><label for="contact"><b>Contact Info</b></label><input type="text" id="contact" required></div>
+                <div class="form-group"><label for="studentId"><b>Student ID</b></label><input type="text" id="studentId" required></div>
+                <button type="submit" class="btn">Submit Report</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="browse" class="tab-content">
+        <div class="search-container"><input type="text" id="searchInput" class="search-input" placeholder="🔍 Search..."></div>
+        <div class="filter-tabs">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="lost">Lost</button>
+            <button class="filter-btn" data-filter="found">Found</button>
+        </div>
+        <div id="itemsContainer" class="items-grid"></div>
+    </div>
+
+    <div id="my-items" class="tab-content">
+        <h2 style="color: white; margin-bottom: 20px; text-align: center;">My Reported Items</h2>
+        <div id="myItemsContainer" class="items-grid"></div>
+    </div>
+</div>
+
+<div id="photoModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Add a Photo</h3>
+        <label for="cameraInput" class="btn">Continue</label>
+        <button type="button" class="close-modal-btn btn" style="background: #a0a0a0; margin-top: 20px;">Cancel</button>
+    </div>
+</div>
+
+<div id="contactModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="contactModalTitle">Contact Information</h3>
+        <p id="contactModalText"></p>
+        <div id="contactModalActions"></div>
+        <button class="close-modal-btn btn" style="background: #6b7280; margin-top: 20px;">Close</button>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <button class="bottom-nav-btn" data-tab="report"><span class="icon">📝</span><span class="label">Report</span></button>
+    <button class="bottom-nav-btn" data-tab="browse"><span class="icon">🔍</span><span class="label">Browse</span></button>
+    <button class="bottom-nav-btn" data-tab="my-items"><span class="icon">📋</span><span class="label">My Items</span></button>
+</nav>
+
+<script>
+    // --- AUTHENTICATION & CORE STATE ---
+    if (!localStorage.getItem('isAuthenticated')) {
+        alert("You're not logged in! Redirecting...");
+        window.location.href = "login.html";
+    }
+
+    let items = JSON.parse(localStorage.getItem('lostFoundItems') || '[]');
+    let photoDataUrl = null;
+    let currentItemFilter = 'all';
+    let newProfilePicDataUrl = null;
+
+    if (items.length === 0) {
+        items = [
+            { id: Date.now() - 1000, type: 'lost', name: 'Black Leather Wallet', description: 'Bifold wallet, contained a student ID for John Doe.', location: 'Library, 2nd Floor', drop: 'College Admin block', date: '2025-07-28', photo: 'images/wallet.jpeg', reporterName: 'John Doe', contact: 'j.doe@university.edu', studentId: 'STU12345' },
+            { id: Date.now() - 2000, type: 'lost', name: 'HydroFlask Water Bottle', description: 'Light blue, 32oz. Has a dent on the bottom and a mountain sticker.', location: 'University Gym', drop: 'ME department block', date: '2025-07-27', photo: 'images/bottle.jpeg', reporterName: 'Alice Smith', contact: '555-0101', studentId: 'STU67890' },
+            { id: Date.now() - 3000, type: 'lost', name: 'AirPods Pro Case', description: 'White charging case (no earbuds inside). Has minor scratches.', location: 'Cafeteria', drop: 'MCA admin block', date: '2025-07-29', photo: 'images/airpods.jpeg', reporterName: 'Bob Johnson', contact: 'b.johnson@university.edu', studentId: 'STU54321' },
+            { id: Date.now() - 4000, type: 'lost', name: 'Chemistry Textbook', description: '"Organic Chemistry as a Second Language". Some highlighting.', location: 'Science Building, Room 301', drop: 'College Admin block', date: '2025-07-26', photo: 'images/textbook.jpeg', reporterName: 'Carla Davis', contact: '555-0102', studentId: 'STU98765' },
+            { id: Date.now() - 5000, type: 'found', name: 'Set of Keys', description: 'Three keys on a silver keyring with a small red bottle opener.', location: 'Main Quad, near fountain', drop: 'MCA department, floor 2 - staff room', date: '2025-07-29', photo: 'images/keys.jpeg', reporterName: 'Campus Security', contact: 'security@university.edu', studentId: 'CAMPUS_SEC' },
+            { id: Date.now() - 6000, type: 'found', name: 'Gray Umbrella', description: 'Standard gray collapsible umbrella. Good condition.', location: 'Bus Stop outside main gate', drop: 'College Admin block', date: '2025-07-28', photo: 'images/umbrella.jpeg', reporterName: 'Eve Williams', contact: 'e.williams@university.edu', studentId: 'STU11223' },
+            { id: Date.now() - 7000, type: 'found', name: 'Single Earbud (Right)', description: 'A single white right-side earbud. Looks like a Samsung Galaxy Bud.', location: 'Student Union, Game Room', drop: 'Mtech block', date: '2025-07-27', photo: 'images/earbud.jpeg', reporterName: 'Frank Brown', contact: '555-0103', studentId: 'STU44556' }
+        ];
+        localStorage.setItem('lostFoundItems', JSON.stringify(items));
+    }
+
+    // --- DOM ELEMENT REFERENCES ---
+    const allTabs = document.querySelectorAll('.tab-content');
+    const bottomNav = document.querySelector('.bottom-nav');
+    const searchInput = document.getElementById('searchInput');
+    const filterContainer = document.querySelector('.filter-tabs');
+    const sideMenuOverlay = document.getElementById('sideMenuOverlay');
+    const sideMenu = document.getElementById('sideMenu');
+
+    // --- SIDE MENU LOGIC ---
+    function openSideMenu() {
+        populateSideMenu();
+        sideMenuOverlay.classList.add('visible');
+        sideMenu.classList.add('visible');
+        document.body.classList.add('side-menu-open');
+    }
+
+    function closeSideMenu() {
+        sideMenuOverlay.classList.remove('visible');
+        sideMenu.classList.remove('visible');
+        document.body.classList.remove('side-menu-open');
+        newProfilePicDataUrl = null;
+    }
+
+    function populateSideMenu() {
+        const user = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!user) return;
+
+        document.getElementById('sideMenuProfilePic').src = user.profilePic || `data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cccccc'%3e%3cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3e%3c/svg%3e`;
+        document.getElementById('sideMenuProfileName').textContent = user.name;
+        document.getElementById('sideMenuProfileEmail').textContent = user.email;
+        document.getElementById('updateName').value = user.name;
+        document.getElementById('updateEmail').value = user.email;
+    }
+
+    document.getElementById('openSideMenuBtn').addEventListener('click', openSideMenu);
+    document.getElementById('closeSideMenuBtn').addEventListener('click', closeSideMenu);
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+    // Remove ONLY auth/session data, keep items
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('loggedInUser');
+    alert("Logged out!");
+    window.location.href = "login.html";
+});
+
+    sideMenuOverlay.addEventListener('click', e => { if (e.target === sideMenuOverlay) closeSideMenu(); });
+
+    document.getElementById('updateProfilePic').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            newProfilePicDataUrl = event.target.result;
+            document.getElementById('sideMenuProfilePic').src = newProfilePicDataUrl;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('profileUpdateForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!user) return;
+
+        user.name = document.getElementById('updateName').value;
+        user.email = document.getElementById('updateEmail').value;
+        if (newProfilePicDataUrl) {
+            user.profilePic = newProfilePicDataUrl;
+        }
+
+        localStorage.setItem('loggedInUser', JSON.stringify(user));
+        alert('Profile updated successfully!');
+        closeSideMenu();
+        init();
+    });
+
+    // --- NAVIGATION LOGIC ---
+    bottomNav.addEventListener('click', (e) => {
+        const button = e.target.closest('.bottom-nav-btn');
+        if (!button) return;
+        const tabToShow = button.dataset.tab;
+
+        bottomNav.querySelectorAll('.bottom-nav-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        allTabs.forEach(tab => {
+            tab.classList.toggle('active', tab.id === tabToShow);
+        });
+
+        if (tabToShow === 'browse') displayItems();
+        if (tabToShow === 'my-items') displayMyItems();
+    });
+
+    // --- ITEM DISPLAY & FILTERING ---
+    function createItemCard(item, isMyItem = false) {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        const actionButton = isMyItem
+            ? `<button class="btn" style="background: #ef4444; margin-top: auto;" onclick="deleteItem(${item.id})">🗑️ Delete</button>`
+            : `<button class="btn" style="margin-top: auto;" onclick="contactPerson('${item.contact}', '${item.reporterName}')">📞 Contact</button>`;
+        card.innerHTML = `
+            ${item.photo ? `<img src="${item.photo}" class="item-image">` : `<div class="item-image" style="display: flex; align-items: center; justify-content: center; color: #999;">📷 No Photo</div>`}
+            <div class="item-info">
+                <div style="display:flex; justify-content:space-between; align-items:start;"><h3 class="item-title">${item.name}</h3><span class="status-badge status-${item.type}">${item.type}</span></div>
+                <p style="color:#666; margin: 10px 0;">${item.description}</p>
+                <div class="item-details">
+                    <div class="item-detail"><strong>Location:</strong><span>${item.location}</span></div>
+                    <div class="item-detail"><strong>Drop-Off Location:</strong><span>${item.drop || ''}</span></div>
+                    <div class="item-detail"><strong>Date:</strong><span>${new Date(item.date).toLocaleDateString()}</span></div>
+                </div>
+                ${actionButton}
+            </div>`;
+        return card;
+    }
+
+    function displayItems() {
+        const container = document.getElementById('itemsContainer');
+        const searchTerm = searchInput.value.toLowerCase();
+        const filteredItems = items.filter(item => (currentItemFilter === 'all' || item.type === currentItemFilter) && (!searchTerm || item.name.toLowerCase().includes(searchTerm) || item.location.toLowerCase().includes(searchTerm)));
+        container.innerHTML = '';
+        if (filteredItems.length === 0) container.innerHTML = '<p class="no-items">No items match.</p>';
+        else filteredItems.forEach(item => container.appendChild(createItemCard(item)));
+    }
+
+    function displayMyItems() {
+        const container = document.getElementById('myItemsContainer');
+        const currentUser = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!currentUser) return;
+        const myItems = items.filter(item => item.studentId === currentUser.studentId);
+        container.innerHTML = '';
+        if (myItems.length === 0) container.innerHTML = '<p class="no-items">You have not reported any items.</p>';
+        else myItems.forEach(item => container.appendChild(createItemCard(item, true)));
+    }
+
+    searchInput.addEventListener('input', displayItems);
+    filterContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.filter-btn');
+        if(!button) return;
+        filterContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        currentItemFilter = button.dataset.filter;
+        displayItems();
+    });
+
+    // --- MODAL & ACTION LOGIC ---
+    function openModal(modal) { modal.classList.add('visible'); document.body.classList.add('modal-open'); }
+    function closeModal(modal) { modal.classList.remove('visible'); document.body.classList.remove('modal-open'); }
+
+    const photoModal = document.getElementById('photoModal');
+    const contactModal = document.getElementById('contactModal');
+    document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => {
+        closeModal(photoModal);
+        closeModal(contactModal);
+    }));
+    document.querySelectorAll('.modal-overlay').forEach(overlay => overlay.addEventListener('click', e => {
+        if (e.target === overlay) closeModal(overlay);
+    }));
+
+    function deleteItem(id) {
+        if (confirm('Are you sure you want to delete this item?')) {
+            items = items.filter(item => item.id !== id);
+            localStorage.setItem('lostFoundItems', JSON.stringify(items));
+            displayMyItems();
+        }
+    }
+
+    function contactPerson(contact, name) {
+        const contactModalTitle = document.getElementById('contactModalTitle');
+        const contactModalText = document.getElementById('contactModalText');
+        const contactModalActions = document.getElementById('contactModalActions');
+
+        contactModalActions.innerHTML = '';
+        contactModalTitle.textContent = `Contact ${name}`;
+        contactModalText.innerHTML = `You can reach ${name} using the options below or via the contact detail:<br><strong>${contact}</strong>`;
+
+        if (contact.includes('@')) {
+            contactModalActions.innerHTML += `<a href="mailto:${contact}?subject=Lost & Found Item Inquiry" class="btn action-btn">📧 Email</a>`;
+        } else {
+            contactModalActions.innerHTML += `<a href="tel:${contact}" class="btn action-btn">📞 Call</a>`;
+        }
+
+        const copyButton = document.createElement('button');
+        copyButton.className = 'btn action-btn';
+        copyButton.style.background = '#6b7280';
+        copyButton.textContent = '📋 Copy';
+        copyButton.onclick = () => {
+            navigator.clipboard.writeText(contact).then(() => {
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => { copyButton.textContent = '📋 Copy'; }, 2000);
+            });
+        };
+        contactModalActions.appendChild(copyButton);
+
+        openModal(contactModal);
+    }
+
+    // --- PHOTO UPLOAD LOGIC ---
+    const cameraInput = document.getElementById('cameraInput');
+    const galleryInput = document.getElementById('galleryInput');
+    function openPhotoModal() { openModal(photoModal); }
+    cameraInput.addEventListener('change', handleFileSelect);
+    galleryInput.addEventListener('change', handleFileSelect);
+    function handleFileSelect(event) {
+        closeModal(photoModal);
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                photoDataUrl = e.target.result;
+                document.getElementById('photoPreview').src = photoDataUrl;
+                document.getElementById('addPhotoBox').style.display = 'none';
+                document.getElementById('previewContainer').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    function removePhoto() {
+        photoDataUrl = null;
+        cameraInput.value = ''; galleryInput.value = '';
+        document.getElementById('photoPreview').src = '';
+        document.getElementById('addPhotoBox').style.display = 'flex';
+        document.getElementById('previewContainer').style.display = 'none';
+    }
+
+    // --- FORM SUBMISSION ---
+    document.getElementById('itemForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const newItem = {
+            id: Date.now(), type: document.getElementById('itemType').value, name: document.getElementById('itemName').value,
+            description: document.getElementById('description').value, location: document.getElementById('location').value,
+            drop: document.getElementById('drop').value,
+            date: document.getElementById('date').value, photo: photoDataUrl, reporterName: document.getElementById('name').value,
+            contact: document.getElementById('contact').value, studentId: document.getElementById('studentId').value,
+        };
+        items.unshift(newItem);
+        localStorage.setItem('lostFoundItems', JSON.stringify(items));
+        document.getElementById('itemForm').reset();
+        removePhoto();
+        alert('✅ Item reported successfully!');
+        document.querySelector('.bottom-nav-btn[data-tab="browse"]').click();
+    });
+
+    // --- INITIALIZATION ---
+    function init() {
+        document.getElementById('date').valueAsDate = new Date();
+        const currentUser = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (currentUser) {
+            document.getElementById('name').value = currentUser.name || '';
+            document.getElementById('contact').value = currentUser.email || '';
+            document.getElementById('studentId').value = currentUser.studentId || '';
+        }
+        // CORRECTED: Added a small delay to ensure the page is ready
+        setTimeout(() => {
+            document.querySelector('.bottom-nav-btn[data-tab="report"]').click();
+        }, 10);
+    }
+
+    init();
+</script>
+</body>
+</html>

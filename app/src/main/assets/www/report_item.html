@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Report Item | Campus Lost & Found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="theme-color" content="#667eea"/>
+    <style>
+        body {
+          background: linear-gradient(144deg,#667eea 0%,#764ba2 80%);
+          min-height:100vh;
+          font-family:'Segoe UI', 'Roboto',sans-serif;
+          color: #23234a;
+          padding-bottom:100px;
+        }
+        .container {
+          background: rgba(255,255,255,0.90);
+          margin:38px auto 0 auto; max-width:420px; border-radius:18px; box-shadow:0 8px 36px rgba(120,80,240,0.14);
+          padding:33px 16px 25px 16px;
+        }
+        h2 { color: #5f51d8; font-weight:bold; text-align:center; margin-bottom:18px;}
+        .form-group {
+          margin-bottom:16px;
+        }
+        label { font-weight:600; }
+        input, textarea, select {
+          display:block;width:100%;padding:11px; border-radius:9px;border:1.5px solid #eee; font-size:1rem;margin-top:8px;
+          background:rgba(255,255,255,0.6);
+        }
+        .btn {
+          background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+          color: #fff; font-weight: 600; font-size:1.09rem; border-radius:9px; border:none; padding:14px 0;
+          box-shadow: 0 4px 16px rgba(102,126,234,0.13);
+          margin-top:10px;
+          width:100%;
+          cursor:pointer;
+          transition: background 0.12s;
+        }
+        .btn:active {background: linear-gradient(135deg,#764ba2 0%, #667eea 100%);}
+        .status-message {text-align:center;font-size:1.08rem;color:#0e8947;margin-bottom:16px;}
+        .preview-img {max-width:100%;margin: 12px 0 4px 0; border-radius:9px; box-shadow:0 2px 8px #764ba231;}
+        .bottom-nav {position:fixed;bottom:19px;left:50%;transform:translateX(-50%);width:90vw;max-width:380px;height:64px;background:rgba(255,255,255,0.92);border-radius:22px;box-shadow:0 6px 24px rgba(120,80,240,0.18),0 1px 7px rgba(150,160,250,0.07);backdrop-filter:blur(16px);display:flex;justify-content:space-around;align-items:center;z-index:1002;border:1.3px solid #ebeaff;}
+        .bottom-nav button{flex:1 1 0;background:none;border:none;display:flex;flex-direction:column;align-items:center;color:#8173d9;font-size:15px;padding:4px 0 0 0;cursor:pointer;border-radius:15px;transition:background .15s,color .2s;font-weight:500;position:relative;}
+        .bottom-nav button.active,.bottom-nav button:focus,.bottom-nav button:active{background:linear-gradient(130deg,#ebeafd 60%,#f2eaff 100%);color:#5f51d8;}
+        .bottom-nav .nav-indicator{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:38px;height:4px;border-radius:5px 5px 0 0;background:linear-gradient(90deg,#667eea 10%,#764ba2 90%);opacity:.7;margin-top:5px;}
+        .nav-icon {font-size:1.6rem;margin-bottom:0;display:block;}
+        .nav-label {font-size:0.95em;margin-top:0;}
+        .logout-btn {position: fixed; top:16px; right:15px; background: linear-gradient(135deg,#ff7a7a,#d01919); color: #fff; border:none; border-radius: 50px; font-weight: bold; padding:13px 20px; font-size:0.97rem;letter-spacing:0.2px;box-shadow:0 2px 10px rgba(255,30,30,0.09); cursor: pointer; z-index:1001;}
+        @media (max-width: 500px) {.container{border-radius:0;margin-top:14px;padding:8vw 3vw 17vw 3vw;}}
+    </style>
+</head>
+<body>
+<button class="logout-btn" id="logoutBtn">Logout</button>
+<div class="container">
+    <div class="status-message" id="statusMessage"></div>
+    <h2>📝 Report Lost/Found Item</h2>
+    <form id="itemForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="itemType">Item Type</label>
+            <select id="itemType" required>
+                <option value="">Select...</option>
+                <option value="lost">Lost Item</option>
+                <option value="found">Found Item</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="itemName">Item Name</label>
+            <input type="text" id="itemName" required />
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" id="location" required />
+        </div>
+        <div class="form-group">
+            <label for="drop">Drop-Off Location</label>
+            <input type="text" id="drop" required />
+        </div>
+        <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" required />
+        </div>
+        <div class="form-group">
+            <label for="photo">Photo (Optional)</label>
+            <input type="file" id="photo" accept="image/*"/>
+            <img id="preview" style="display:none;" class="preview-img"/>
+        </div>
+        <button class="btn" type="submit">Submit Report</button>
+    </form>
+</div>
+<nav class="bottom-nav">
+    <button onclick="navigate('report_item.html')" class="active">
+        <span class="nav-icon">&#128221;</span>
+        <span class="nav-label">Report</span>
+        <div class="nav-indicator"></div>
+    </button>
+    <button onclick="navigate('browse_items.html')">
+        <span class="nav-icon">&#128269;</span><span class="nav-label">Browse</span>
+    </button>
+    <button onclick="navigate('my_items.html')">
+        <span class="nav-icon">&#128100;</span><span class="nav-label">My Items</span>
+    </button>
+</nav>
+<script>
+    function navigate(url) { window.location.href = url;}
+    if (!localStorage.getItem('isAuthenticated')) {
+      alert("You're not logged in! Redirecting to login...");
+      window.location.href = "login.html";
+    }
+    document.getElementById('logoutBtn').onclick=function(){
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('loggedInUser');
+      alert("You have been logged out!");
+      window.location.href = "login.html";
+    };
+    // Photo preview
+    document.getElementById('photo').onchange = function(evt) {
+      const file = this.files[0];
+      const preview = document.getElementById('preview');
+      if(file){
+        preview.style.display = 'block';
+        const reader = new FileReader();
+        reader.onload = e=>{preview.src=e.target.result;};
+        reader.readAsDataURL(file);
+      } else preview.style.display = 'none';
+    };
+    // Demo: Save item to localStorage, include photo as dataURL
+    document.getElementById('itemForm').onsubmit = function(e) {
+      e.preventDefault();
+      const itemType = document.getElementById('itemType').value;
+      const itemName = document.getElementById('itemName').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const location = document.getElementById('location').value.trim();
+      const drop= document.getElementById('drop').value.trim();
+      const date = document.getElementById('date').value;
+      const photo = document.getElementById('photo').files[0];
+      const msg = document.getElementById('statusMessage');
+      let currUser = JSON.parse(localStorage.getItem('loggedInUser') || "null");
+      if(!currUser) currUser = {email:'unknown'};
+      // In the form submit handler
+const drop = document.getElementById('drop').value.trim(); // Already reading it
+
+function finishWithPhoto(photoUrl) {
+    const items = JSON.parse(localStorage.getItem('items')||"[]");
+    items.push({
+        itemType,
+        itemName,
+        description,
+        location,
+        drop,
+        date,
+        photoUrl,
+        email: currUser.email
+    });
+    localStorage.setItem('items', JSON.stringify(items));
+    msg.textContent = "Submitted! Thank you.";
+    setTimeout(()=>{window.location.href="my_items.html";},1200);
+    document.getElementById('itemForm').reset();
+    document.getElementById('preview').style.display='none';
+}
+
+      if(photo){
+        const reader = new FileReader();
+        reader.onload = e=>finishWithPhoto(e.target.result);
+        reader.readAsDataURL(photo);
+      } else finishWithPhoto("");
+    };
+</script>
+</body>
+</html>
